@@ -1,9 +1,9 @@
 (function(){
 var UA='JoiHow/1.0 (by Chloetheleafy-hub on GitHub)';
-var q=[],box=document.createElement('pre');
+var JP=JSON.parse,q=[],box=document.createElement('pre');
 box.style.cssText='position:fixed;left:0;right:0;bottom:0;max-height:35vh;overflow:auto;margin:0;padding:6px;font:11px monospace;background:#000c;color:#0f0;z-index:99999;white-space:pre-wrap;word-break:break-all;pointer-events:none';
 function L(t){q.push(t);if(document.body){if(!box.parentNode)document.body.appendChild(box);box.textContent=q.slice(-30).join('\n');box.scrollTop=box.scrollHeight}}
-document.addEventListener('DOMContentLoaded',function(){L('patch actif')});
+document.addEventListener('DOMContentLoaded',function(){L('patch v3 actif')});
 window.addEventListener('error',function(e){L('ERR '+e.message)});
 window.addEventListener('unhandledrejection',function(e){L('REJET '+e.reason)});
 function conv(a){
@@ -23,18 +23,23 @@ function conv(a){
   };
  })};
 }
+function isNew(v){return Array.isArray(v)&&v.length>0&&v[0]&&v[0].files&&v[0].files.original}
+JSON.parse=function(t,r){
+ var v=JP.call(this,t,r);
+ try{if(isNew(v)){L('JSON.parse converti '+v.length+' posts');return conv(v)}}catch(e){L('JP ERREUR '+e)}
+ return v;
+};
 function fix(t){
  try{
-  if(typeof t==='string'){var j=JSON.parse(t);return Array.isArray(j)?JSON.stringify(conv(j)):t}
+  if(typeof t==='string'){var j=JP(t);return Array.isArray(j)?JSON.stringify(conv(j)):t}
   if(Array.isArray(t))return conv(t);
- }catch(e){}
+ }catch(e){L('fix ERREUR '+e)}
  return t;
 }
 var isE=function(u){return /e621\.net\/posts\.json/.test(u)};
 var F=window.fetch;
 window.fetch=async function(r,o){
  var u=typeof r==='string'?r:((r&&r.url)||String(r));
- L('fetch '+u.slice(0,110));
  var res;
  try{
   if(isE(u)&&typeof r==='string'){
@@ -44,25 +49,32 @@ window.fetch=async function(r,o){
   }
   res=await F.call(this,r,o);
  }catch(e){L('fetch ERREUR '+e);throw e}
- L('-> '+res.status);
  if(!isE(u))return res;
+ L('fetch e621 -> '+res.status);
  try{
-  var j=JSON.parse(await res.clone().text());
+  var j=JP(await res.clone().text());
   if(!Array.isArray(j))return res;
-  L('converti '+j.length+' posts');
+  L('fetch converti '+j.length+' posts');
   return new Response(JSON.stringify(conv(j)),{status:res.status,statusText:res.statusText,headers:{'Content-Type':'application/json'}});
- }catch(e){L('conv ERREUR '+e);return res}
+ }catch(e){L('fetch conv ERREUR '+e);return res}
 };
 var XO=window.XMLHttpRequest;
 window.XMLHttpRequest=function(){
  var x=new XO(),url='',op=x.open;
- x.open=function(m,u){url=String(u);L('xhr '+url.slice(0,110));return op.apply(x,arguments)};
- x.addEventListener('loadend',function(){L('xhr -> '+x.status)});
+ x.open=function(m,u){url=String(u);return op.apply(x,arguments)};
  ['response','responseText'].forEach(function(k){
-  var d=Object.getOwnPropertyDescriptor(x,k),p=XO.prototype;
-  while(!d&&p){d=Object.getOwnPropertyDescriptor(p,k);p=Object.getPrototypeOf(p)}
-  if(!d||!d.get)return;
-  Object.defineProperty(x,k,{configurable:true,get:function(){var v=d.get.call(x);return isE(url)?fix(v):v}});
+  try{
+   var d=Object.getOwnPropertyDescriptor(x,k),p=XO.prototype;
+   while(!d&&p){d=Object.getOwnPropertyDescriptor(p,k);p=Object.getPrototypeOf(p)}
+   if(!d||!d.get)return;
+   Object.defineProperty(x,k,{configurable:true,get:function(){
+    var v=d.get.call(x);
+    if(!isE(url))return v;
+    var w=fix(v);
+    if(x.readyState==4&&!x._l){x._l=1;L('xhr '+x.status+' recu '+(Array.isArray(v)?'tableau '+v.length:typeof v)+' -> '+(w!==v?'converti':'inchange'))}
+    return w;
+   }});
+  }catch(e){L('xhr patch ERREUR '+k+' '+e)}
  });
  return x;
 };
