@@ -1,5 +1,11 @@
 (function(){
 var UA='JoiHow/1.0 (by Chloetheleafy-hub on GitHub)';
+var q=[],box=document.createElement('pre');
+box.style.cssText='position:fixed;left:0;right:0;bottom:0;max-height:35vh;overflow:auto;margin:0;padding:6px;font:11px monospace;background:#000c;color:#0f0;z-index:99999;white-space:pre-wrap;word-break:break-all;pointer-events:none';
+function L(t){q.push(t);if(document.body){if(!box.parentNode)document.body.appendChild(box);box.textContent=q.slice(-30).join('\n');box.scrollTop=box.scrollHeight}}
+document.addEventListener('DOMContentLoaded',function(){L('patch actif')});
+window.addEventListener('error',function(e){L('ERR '+e.message)});
+window.addEventListener('unhandledrejection',function(e){L('REJET '+e.reason)});
 function conv(a){
  return{posts:a.map(function(p){
   var f=p.files||{},m=f.meta||{},o=f.original||{},pv=f.preview||{},sp=f.sample||{},h=p.has||{},s=p.stats||{};
@@ -28,21 +34,30 @@ var isE=function(u){return /e621\.net\/posts\.json/.test(u)};
 var F=window.fetch;
 window.fetch=async function(r,o){
  var u=typeof r==='string'?r:((r&&r.url)||String(r));
- if(!isE(u))return F.apply(this,arguments);
- if(typeof r==='string'&&!(o&&o.headers instanceof Headers)){
-  o=Object.assign({},o);o.headers=Object.assign({},o.headers,{'User-Agent':UA});
- }
- var res=await F.call(this,r,o);
+ L('fetch '+u.slice(0,110));
+ var res;
  try{
-  var t=await res.clone().text(),j=JSON.parse(t);
+  if(isE(u)&&typeof r==='string'){
+   var h={};
+   if(o&&o.headers){if(o.headers.forEach&&!Array.isArray(o.headers))o.headers.forEach(function(v,k){h[k]=v});else Object.assign(h,o.headers)}
+   h['User-Agent']=UA;o=Object.assign({},o,{headers:h});
+  }
+  res=await F.call(this,r,o);
+ }catch(e){L('fetch ERREUR '+e);throw e}
+ L('-> '+res.status);
+ if(!isE(u))return res;
+ try{
+  var j=JSON.parse(await res.clone().text());
   if(!Array.isArray(j))return res;
+  L('converti '+j.length+' posts');
   return new Response(JSON.stringify(conv(j)),{status:res.status,statusText:res.statusText,headers:{'Content-Type':'application/json'}});
- }catch(e){return res}
+ }catch(e){L('conv ERREUR '+e);return res}
 };
 var XO=window.XMLHttpRequest;
 window.XMLHttpRequest=function(){
  var x=new XO(),url='',op=x.open;
- x.open=function(m,u){url=String(u);return op.apply(x,arguments)};
+ x.open=function(m,u){url=String(u);L('xhr '+url.slice(0,110));return op.apply(x,arguments)};
+ x.addEventListener('loadend',function(){L('xhr -> '+x.status)});
  ['response','responseText'].forEach(function(k){
   var d=Object.getOwnPropertyDescriptor(x,k),p=XO.prototype;
   while(!d&&p){d=Object.getOwnPropertyDescriptor(p,k);p=Object.getPrototypeOf(p)}
