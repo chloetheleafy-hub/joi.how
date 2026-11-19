@@ -1,9 +1,15 @@
 (function(){
 var UA='JoiHow/1.0 (by Chloetheleafy-hub on GitHub)';
-var JP=JSON.parse,q=[],box=document.createElement('pre');
+var JP=JSON.parse,q=[],box=document.createElement('pre'),btn=document.createElement('button');
+var hid=true;try{hid=localStorage.getItem('joiLog')!=='1'}catch(e){}
 box.style.cssText='position:fixed;left:0;right:0;bottom:0;max-height:35vh;overflow:auto;margin:0;padding:6px;font:11px monospace;background:#000c;color:#0f0;z-index:99999;white-space:pre-wrap;word-break:break-all;pointer-events:none';
-function L(t){q.push(t);if(document.body){if(!box.parentNode)document.body.appendChild(box);box.textContent=q.slice(-30).join('\n');box.scrollTop=box.scrollHeight}}
-document.addEventListener('DOMContentLoaded',function(){L('patch v3 actif')});
+btn.textContent='i';
+btn.style.cssText='position:fixed;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));width:30px;height:30px;padding:0;border:0;border-radius:50%;background:#000a;color:#fff;font:bold 15px sans-serif;z-index:100000';
+function apply(){box.style.display=hid?'none':'block';btn.style.opacity=hid?'.3':'.8'}
+btn.onclick=function(){hid=!hid;try{localStorage.setItem('joiLog',hid?'0':'1')}catch(e){}apply()};
+function attach(){if(document.body&&!box.parentNode){document.body.appendChild(box);document.body.appendChild(btn);apply()}}
+function L(t){q.push(t);attach();box.textContent=q.slice(-30).join('\n');box.scrollTop=box.scrollHeight}
+document.addEventListener('DOMContentLoaded',function(){L('patch v4 actif')});
 window.addEventListener('error',function(e){L('ERR '+e.message)});
 window.addEventListener('unhandledrejection',function(e){L('REJET '+e.reason)});
 function conv(a){
