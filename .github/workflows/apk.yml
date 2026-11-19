@@ -1,0 +1,32 @@
+name: Build APK
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - run: yarn install
+      - run: yarn build --base=./
+      - run: yarn add @capacitor/core@^6 @capacitor/cli@^6 @capacitor/android@^6
+      - name: Config Capacitor
+        run: |
+          OUT=dist
+          if [ ! -d dist ] && [ -d build ]; then OUT=build; fi
+          echo '{"appId":"com.chloe.joihow","appName":"JOI","webDir":"'$OUT'","overrideUserAgent":"JoiHow/1.0 (by Chloetheleafy-hub on GitHub)","plugins":{"CapacitorHttp":{"enabled":true}}}' > capacitor.config.json
+      - run: npx cap add android
+      - run: npx cap sync android
+      - run: cd android && chmod +x gradlew && ./gradlew assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: joi-how-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
