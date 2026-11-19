@@ -17,6 +17,13 @@ jobs:
           java-version: 17
       - run: yarn install
       - run: yarn build --base=./
+      - name: Patch e621
+        run: |
+          OUT=dist
+          if [ ! -d dist ] && [ -d build ]; then OUT=build; fi
+          cp e621-patch.js $OUT/e621-patch.js
+          sed -i 's#<head>#<head><script src="./e621-patch.js"></script>#' $OUT/index.html
+          grep -c e621-patch $OUT/index.html
       - run: yarn add @capacitor/core@^6 @capacitor/cli@^6 @capacitor/android@^6
       - name: Config Capacitor
         run: |
